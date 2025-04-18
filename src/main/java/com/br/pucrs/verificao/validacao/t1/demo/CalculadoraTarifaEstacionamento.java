@@ -6,7 +6,6 @@ import java.time.LocalTime;
 
 public class CalculadoraTarifaEstacionamento {
     private static final LocalTime ABERTURA = LocalTime.of(8, 0);
-    private static final LocalTime FECHAMENTO = LocalTime.of(2, 0);
     private static final LocalTime ENTRADA_MAXIMA = LocalTime.of(23, 59);
     private static final LocalTime SAIDA_PROIBIDA_INICIO = LocalTime.of(2, 0);
     private static final LocalTime SAIDA_PROIBIDA_FIM = LocalTime.of(7, 59);
@@ -31,6 +30,7 @@ public class CalculadoraTarifaEstacionamento {
         Duration duracao = Duration.between(entrada, saida);
         long minutos = duracao.toMinutes();
         long horas = duracao.toHours();
+        long minutosAdicionais = minutos % 60;
 
         if (minutos <= MINUTOS_CORTESIA) {
             return 0.0;
@@ -40,13 +40,15 @@ public class CalculadoraTarifaEstacionamento {
             return isVip ? TARIFA_PERNOITE / 2 : TARIFA_PERNOITE;
         }
 
-        if (horas <= 1) {
+        if (horas <= 1 && minutosAdicionais == 0) {
             return isVip ? TARIFA_FIXA / 2 : TARIFA_FIXA;
         }
 
         double tarifa = TARIFA_FIXA + (horas - 1) * TARIFA_ADICIONAL;
+        if (minutosAdicionais > 0) {
+            tarifa += TARIFA_ADICIONAL;
+        }
         return isVip ? tarifa / 2 : tarifa;
-
     }
 
     private static boolean entradaValida(LocalDateTime entrada) {
@@ -56,16 +58,10 @@ public class CalculadoraTarifaEstacionamento {
 
     private static boolean saidaValida(LocalDateTime entrada, LocalDateTime saida) {
         LocalTime horaSaida = saida.toLocalTime();
-
         if (saida.toLocalDate().isEqual(entrada.toLocalDate())) {
             return !(horaSaida.isAfter(SAIDA_PROIBIDA_INICIO) && horaSaida.isBefore(SAIDA_PROIBIDA_FIM));
         }
-
-        if (saida.toLocalDate().isAfter(entrada.toLocalDate())) {
-            return !(horaSaida.isAfter(SAIDA_PROIBIDA_INICIO) && horaSaida.isBefore(SAIDA_PROIBIDA_FIM));
-        }
-
-        return true;
+        return !(horaSaida.isAfter(SAIDA_PROIBIDA_INICIO) && horaSaida.isBefore(SAIDA_PROIBIDA_FIM));
     }
 }
 
