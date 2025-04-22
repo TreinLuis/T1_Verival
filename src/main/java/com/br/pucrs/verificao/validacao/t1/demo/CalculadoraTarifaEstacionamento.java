@@ -6,6 +6,7 @@ import java.time.LocalTime;
 
 public class CalculadoraTarifaEstacionamento {
     private static final LocalTime ABERTURA = LocalTime.of(8, 0);
+    private static final LocalTime FECHAMENTO = LocalTime.of(2, 0); // 2:00 do dia seguinte
     private static final LocalTime ENTRADA_MAXIMA = LocalTime.of(23, 59);
     private static final LocalTime SAIDA_PROIBIDA_INICIO = LocalTime.of(2, 0);
     private static final LocalTime SAIDA_PROIBIDA_FIM = LocalTime.of(7, 59);
@@ -19,7 +20,7 @@ public class CalculadoraTarifaEstacionamento {
             throw new IllegalArgumentException("Horário de entrada inválido.");
         }
 
-        if (!saidaValida(entrada, saida)) {
+        if (!saidaValida(saida)) {
             throw new IllegalArgumentException("Horário de saída inválido.");
         }
 
@@ -27,27 +28,43 @@ public class CalculadoraTarifaEstacionamento {
             throw new IllegalArgumentException("A saída não pode ocorrer antes da entrada.");
         }
 
+        // Verificar se é pernoite (saída após 8:00 do dia seguinte à entrada)
+        boolean isPernoite = saida.toLocalDate().isAfter(entrada.toLocalDate()) &&
+                saida.toLocalTime().isAfter(ABERTURA);
+
+        if (isPernoite) {
+            return aplicarDescontoVip(TARIFA_PERNOITE, isVip);
+        }
+
         Duration duracao = Duration.between(entrada, saida);
         long minutos = duracao.toMinutes();
-        long horas = duracao.toHours();
-        long minutosAdicionais = minutos % 60;
 
+        // Período de cortesia
         if (minutos <= MINUTOS_CORTESIA) {
             return 0.0;
         }
 
-        if (saida.toLocalTime().isAfter(ABERTURA) && saida.toLocalDate().isAfter(entrada.toLocalDate())) {
-            return isVip ? TARIFA_PERNOITE / 2 : TARIFA_PERNOITE;
-        }
+        // Cálculo de tarifa normal
+        double tarifa;
 
-        if (horas <= 1 && minutosAdicionais == 0) {
-            return isVip ? TARIFA_FIXA / 2 : TARIFA_FIXA;
-        }
+        // Arredonda para cima para considerar hora parcial
+        long horas = minutos / 60;
+        long minutosAdicionais = minutos % 60;
 
-        double tarifa = TARIFA_FIXA + (horas - 1) * TARIFA_ADICIONAL;
         if (minutosAdicionais > 0) {
-            tarifa += TARIFA_ADICIONAL;
+            horas++; // Incrementa hora se houver minutos adicionais
         }
+
+        if (horas <= 1) {
+            tarifa = TARIFA_FIXA;
+        } else {
+            tarifa = TARIFA_FIXA + (horas - 1) * TARIFA_ADICIONAL;
+        }
+
+        return aplicarDescontoVip(tarifa, isVip);
+    }
+
+    private static double aplicarDescontoVip(double tarifa, boolean isVip) {
         return isVip ? tarifa / 2 : tarifa;
     }
 
@@ -56,12 +73,9 @@ public class CalculadoraTarifaEstacionamento {
         return !horaEntrada.isBefore(ABERTURA) && !horaEntrada.isAfter(ENTRADA_MAXIMA);
     }
 
-    private static boolean saidaValida(LocalDateTime entrada, LocalDateTime saida) {
+    private static boolean saidaValida(LocalDateTime saida) {
         LocalTime horaSaida = saida.toLocalTime();
-        if (saida.toLocalDate().isEqual(entrada.toLocalDate())) {
-            return !(horaSaida.isAfter(SAIDA_PROIBIDA_INICIO) && horaSaida.isBefore(SAIDA_PROIBIDA_FIM));
-        }
-        return !(horaSaida.isAfter(SAIDA_PROIBIDA_INICIO) && horaSaida.isBefore(SAIDA_PROIBIDA_FIM));
+        return !(horaSaida.isAfter(SAIDA_PROIBIDA_INICIO.minusMinutes(1)) &&
+                horaSaida.isBefore(ABERTURA));
     }
 }
-
