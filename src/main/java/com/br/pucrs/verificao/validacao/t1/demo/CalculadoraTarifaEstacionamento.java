@@ -28,6 +28,7 @@ public class CalculadoraTarifaEstacionamento {
             throw new IllegalArgumentException("A saída não pode ocorrer antes da entrada.");
         }
 
+
         // Verificar se é pernoite (saída após 8:00 do dia seguinte à entrada)
         boolean isPernoite = saida.toLocalDate().isAfter(entrada.toLocalDate()) &&
                 saida.toLocalTime().isAfter(ABERTURA);
@@ -70,11 +71,13 @@ public class CalculadoraTarifaEstacionamento {
 
     private static boolean entradaValida(LocalDateTime entrada) {
         LocalTime horaEntrada = entrada.toLocalTime();
+        if(horaEntrada.isAfter(FECHAMENTO) && horaEntrada.isBefore(ABERTURA)) return false;
         return !horaEntrada.isBefore(ABERTURA) && !horaEntrada.isAfter(ENTRADA_MAXIMA);
     }
 
     private static boolean saidaValida(LocalDateTime saida) {
         LocalTime horaSaida = saida.toLocalTime();
+        if(horaSaida.isBefore(SAIDA_PROIBIDA_FIM) && horaSaida.isAfter(FECHAMENTO)) return false;
         return !(horaSaida.isAfter(SAIDA_PROIBIDA_INICIO.minusMinutes(1)) &&
                 horaSaida.isBefore(ABERTURA));
     }
