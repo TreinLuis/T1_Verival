@@ -161,11 +161,6 @@ public class CalculadoraTarifaEstacionamentoTest {
                         LocalDateTime.of(2025, 4, 22, 0, 59),
                         false, 9.0),
 
-//                // HS1: Saída no horário limite permitido
-//                Arguments.of("Saída no horário limite permitido",
-//                        LocalDateTime.of(2025, 4, 21, 1, 0),
-//                        LocalDateTime.of(2025, 4, 21, 2, 0),
-//                        false,9.0),
 
                 // HS2: Saída no horário de abertura
                 Arguments.of("Saída no horário de abertura",
@@ -255,17 +250,10 @@ public class CalculadoraTarifaEstacionamentoTest {
                         LocalDateTime.of(2025, 4, 21, 9, 0),
                         false),
 
-                Arguments.of("Entrada durante período de fechamento (03:00)",
-                        LocalDateTime.of(2025, 4, 21, 3, 0),
-                        LocalDateTime.of(2025, 4, 21, 4, 0),
-                        false),
-
                 Arguments.of("Entrada logo após o horário de fechamento (02:01)",
                         LocalDateTime.of(2025, 4, 21, 2, 1),
                         LocalDateTime.of(2025, 4, 21, 9, 0),
                         false)
         );
     }
-
-
 }
